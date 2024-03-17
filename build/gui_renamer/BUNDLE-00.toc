@@ -1,3 +1,0 @@
-([('gui_renamer',
-   '/Users/ianklein/Documents/Programing/Uni-File-Renamer/dist/gui_renamer',
-   'EXECUTABLE')],)
