@@ -1,6 +1,7 @@
 import tkinter as tk
 import os
 from tkinter import filedialog, messagebox, simpledialog
+import threading
 from renamer import process_folders  # Assume process_folders in renamer.py handles all logic
 
 class FolderSelector:
@@ -56,25 +57,21 @@ class FolderSelector:
         if not base_output_folder:
             return
         
-        # Create a new subdirectory within the selected directory
         output_folder_name = simpledialog.askstring("Output Folder", "Enter a name for the new folder:")
         if not output_folder_name:
             messagebox.showwarning("Warning", "No folder name provided.")
             return
 
         output_folder = os.path.join(base_output_folder, output_folder_name)
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-        else:
+        if os.path.exists(output_folder):
             messagebox.showwarning("Warning", f"The folder {output_folder_name} already exists.")
             return
+        
+        os.makedirs(output_folder)
 
-        try:
-            process_folders(self.folders, output_folder)
-            messagebox.showinfo("Success", "Files renamed successfully!")
-        except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
-
+        # Run the process in a separate thread
+        process_thread = threading.Thread(target=process_folders, args=(self.folders, output_folder), daemon=True)
+        process_thread.start()
 
 # Create the main window
 root = tk.Tk()
