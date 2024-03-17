@@ -17,15 +17,14 @@ def sort_key_new(filename):
     except (IndexError, ValueError):
         return 0
 
+
 def process_folders(folders, destination_folder):
+    # Configure logging to output to the console
+    logging.basicConfig(level=logging.DEBUG, 
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
-
-    log_filename = os.path.join(destination_folder, "renamer.log")
-    logging.basicConfig(level=logging.DEBUG, 
-                        format='%(asctime)s - %(levelname)s - %(message)s', 
-                        filename=log_filename, 
-                        filemode='a')
 
     logging.info("Process started.")
 
@@ -51,10 +50,6 @@ def process_folders(folders, destination_folder):
         with pd.ExcelWriter(excel_filename) as writer:
             df.sort_values(by='Old Filename', key=lambda x: x.map(sort_key_old)).to_excel(writer, index=False, sheet_name='Sorted by Original Name')
             df.sort_values(by='New Filename', key=lambda x: x.map(sort_key_new)).to_excel(writer, index=False, sheet_name='Sorted by New Name')
-
-        logging.info(f"Renaming process complete. Log saved to {excel_filename}.")
-    else:
-        logging.error("No files processed.")
 
 
 
