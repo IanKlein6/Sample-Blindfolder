@@ -9,69 +9,72 @@ def sort_key(filename):
     numbers = [int(s) for s in filename.split() if s.isdigit()]
     return numbers[0] if numbers else filename
 
-def rename_files(folder_path):
-    """Rename files in a folder and create a log and Excel file."""
+def process_folders(folders, destination_folder):
+    """Process multiple folders and rename files in batches."""
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+
+    # Copy all files from selected folders to the destination folder
+    for folder in folders:
+        for file_name in os.listdir(folder):
+            source = os.path.join(folder, file_name)
+            if os.path.isfile(source):
+                destination = os.path.join(destination_folder, file_name)
+                shutil.copy(source, destination)
+
+    # Now, call rename_files on the destination folder
+    rename_files(destination_folder)
+
+def rename_files(folder_path, batch_size=50):
+    """Rename files in a folder in batches and create a log and Excel file."""
     log_filename = "renamer.log"
-    
+
     # Configure logging
     logging.basicConfig(level=logging.DEBUG, 
                         format='%(asctime)s - %(levelname)s - %(message)s', 
                         filename=log_filename, 
                         filemode='a')
 
-    # Check if the folder exists
     if not os.path.exists(folder_path):
         logging.error("The folder does not exist. Please check the path and try again.")
-        print("The folder does not exist. Please check the path and try again.")
         return
-    
-    logging.info("Renaming and copying process started.")
-    
-    # List files in the folder
-    files = os.listdir(folder_path)
 
-    # Exit if no files are found
-    if not files:
+    logging.info("Renaming process started.")
+    
+    all_files = sorted(os.listdir(folder_path), key=sort_key)
+    if not all_files:
         logging.warning("No files found in the directory.")
-        print("No files found in the directory.")
         return
 
-    # Create a new folder for renamed files
-    base_folder_path, original_folder_name = os.path.split(folder_path)
-    new_folder_name = f"{original_folder_name}_renamed"
-    new_folder_path = os.path.join(base_folder_path, new_folder_name)
-
-    if not os.path.exists(new_folder_path):
-        os.makedirs(new_folder_path)
-
-    # Generate random indices for renaming
-    random_indices = random.sample(range(1, len(files) + 1), len(files))
+    total_files = len(all_files)
     rename_data = []
+    index_offset = 1
 
-    # Rename and copy files
-    for filename, random_index in zip(files, random_indices):
-        old_file = os.path.join(folder_path, filename)
-        new_filename = f"file_{random_index}{os.path.splitext(filename)[1]}"
-        new_file = os.path.join(new_folder_path, new_filename)
+    # Process files in batches
+    for batch_start in range(0, total_files, batch_size):
+        batch_files = all_files[batch_start:batch_start + batch_size]
+        indices = random.sample(range(index_offset, index_offset + len(batch_files)), len(batch_files))
 
-        shutil.copy(old_file, new_file)
-        rename_data.append({'Old Filename': filename, 'New Filename': new_filename})
+        for filename, index in zip(batch_files, indices):
+            old_file = os.path.join(folder_path, filename)
+            new_filename = f"image_{index}{os.path.splitext(filename)[1]}"
+            new_file = os.path.join(folder_path, new_filename)
+            
+            os.rename(old_file, new_file)
+            rename_data.append({'Old Filename': filename, 'New Filename': new_filename})
 
-        logging.info(f"Copied and renamed {filename} to {new_filename}")
-        print(f"Copied and renamed {filename} to {new_filename}")
+            logging.info(f"Renamed {filename} to {new_filename}")
 
-    # Create a DataFrame with renaming information
-    df = pd.DataFrame(rename_data)
+        index_offset += len(batch_files)
 
-    # Write DataFrame to an Excel file
-    if not df.empty:
-        excel_filename = os.path.join(new_folder_path, 'rename_log.xlsx')
+    # Generate Excel log after all batches are processed
+    if rename_data:
+        df = pd.DataFrame(rename_data)
+        excel_filename = os.path.join(folder_path, 'rename_log.xlsx')
         with pd.ExcelWriter(excel_filename) as writer:
             df.sort_values(by='Old Filename', key=lambda x: x.map(sort_key)).to_excel(writer, index=False, sheet_name='Sorted by Original Name')
             df.sort_values(by='New Filename').to_excel(writer, index=False, sheet_name='Sorted by New Name')
 
-        logging.info(f"Renaming and copying complete. Log saved to {excel_filename}.")
-        print(f"Renaming and copying complete. Log saved to {excel_filename}.")
+        logging.info(f"Renaming process complete. Log saved to {excel_filename}.")
     else:
         logging.error("DataFrame is empty. No data to write to Excel.")
-        print("DataFrame is empty. No data to write to Excel.")
