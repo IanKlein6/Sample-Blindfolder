@@ -58,6 +58,7 @@ class FolderSelector:
         self.folders = []
         self.last_dir = os.path.expanduser("~")
 
+        # Initialize the main application window here...
         self.root.title("Sample Blindfolder")
         self.instructions_label = tk.Label(self.root, text="Add folders for Sample Blindfolding and click 'Destination - Blindfold' when ready.")
         self.instructions_label.pack(pady=(20, 10))
@@ -172,8 +173,18 @@ class FolderSelector:
         self.completion_window.destroy()
 
 
-
-
+# Create a loading window before entering the main event loop
 root = tk.Tk()
+loading_window = Toplevel(root)
+loading_window.title("Loading")
+Label(loading_window, text="Loading... Please wait").pack(padx=20, pady=20)
+
+# Schedule the loading window to be destroyed after a delay
+# Adjust the delay (in milliseconds) as needed
+loading_window.after(2000, loading_window.destroy) # 2000 milliseconds = 2 seconds
+
+# Initialize the main application window
 app = FolderSelector(root)
+
+# Enter the main event loop
 root.mainloop()
