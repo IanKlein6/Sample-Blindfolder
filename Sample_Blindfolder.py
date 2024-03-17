@@ -105,7 +105,7 @@ class FolderSelector:
             return
 
         self.last_dir = os.path.dirname(base_output_folder)
-        output_folder_name = simpledialog.askstring("Output Folder", "Enter a name for the new folder:")
+        output_folder_name = simpledialog.askstring("Output Folder", "Enter a name for the new folder:", parent=self.root)
         if not output_folder_name:
             return
 
@@ -114,21 +114,30 @@ class FolderSelector:
             messagebox.showwarning("Warning", f"The folder {output_folder_name} already exists.")
             return
 
+        # Start the processing after confirmation
+        self.initiate_processing(output_folder)
+    
+    def rename_files_thread(self, folders, destination_folder):
+        try:
+            process_folders(folders, destination_folder)
+        except Exception as e:
+            print(f"Error processing folders: {e}")
+        finally:
+            self.processing_complete = True
+            # Schedule the completion message to be shown in the main thread
+            self.root.after(100, self.check_process_completion)
+
+    def initiate_processing(self, output_folder):
+        self.output_folder = output_folder
         self.loading_window = Toplevel(self.root)
         self.loading_window.title("Processing")
         Label(self.loading_window, text="Processing... Please wait").pack(padx=20, pady=20)
 
         # Start the renaming process in a separate thread
         self.processing_complete = False
-        threading.Thread(target=lambda: self.rename_files_thread(self.folders, output_folder), daemon=True).start()
+        thread = threading.Thread(target=lambda: self.rename_files_thread(self.folders, output_folder), daemon=True)
+        thread.start()
 
-        # Check if the process is complete
-        self.check_process_completion()
-
-    def rename_files_thread(self, folders, destination_folder):
-        process_folders(folders, destination_folder)
-        self.processing_complete = True
-        self.destination_folder = destination_folder  # Store destination folder for later access
 
     def check_process_completion(self):
         if self.processing_complete:
@@ -148,14 +157,22 @@ class FolderSelector:
         open_button.pack(pady=10)
 
     def open_destination_folder(self):
-        # Open the destination folder using the default file explorer
-        if os.name == 'nt':  # for Windows
-            os.startfile(self.destination_folder)
-        elif os.name == 'posix':  # for macOS and Linux
-            os.system(f'open "{self.destination_folder}"' if os.uname().sysname == 'Darwin' else f'xdg-open "{self.destination_folder}"')
-
-        # Close the completion message window on open folder
+        try:
+            if os.name == 'nt': # Windows
+                os.startfile(self.output_folder)
+            elif os.name == 'posix': # macOS and Linux
+                if os.uname().sysname == 'Darwin': # macOS
+                    os.system(f'open "{self.output_folder}"')
+                else: # Linux
+                    os.system(f'xdg-open "{self.output_folder}"')
+        except Exception as e:
+            print(f"Failed to open the folder: {e}")
+            messagebox.showerror("Error", "Could not open the destination folder.")
+        
         self.completion_window.destroy()
+
+
+
 
 root = tk.Tk()
 app = FolderSelector(root)
