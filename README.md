@@ -37,6 +37,11 @@ Developed in Python, the application leverages the language's simplicity and the
 ### Step 4: Review Excel Sheet
 - Upon completion, examine the 'Blindfold_log.xlsx' file in the output directory to view the mapping of original to blinded sample names.
 
+## Project Status and Future Updates
+
+The Sample Blindfolder application is currently operational and actively facilitating the research team's efforts by providing an efficient solution for sample blinding. Looking ahead, there is a planned update to enhance the user interface by integrating Electron, Node.js, and Material UI, promising a more intuitive and engaging user experience.
+
+
 ## Conclusion
 
 The Sample Blindfolder application illustrates how targeted software development can significantly benefit scientific research, enhancing efficiency by automating essential but time-consuming tasks, thus maintaining the integrity and objectivity of the research process.
